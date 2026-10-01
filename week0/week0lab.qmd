@@ -1,0 +1,95 @@
+# Week 0: Discussion Section
+
+### 1. Get Started
+```{r}
+packages <- c("here", "janitor", "tidyverse", "sf", "terra", "tmap", "spData", "spDataLarge", "geodata", "kableExtra", "viridisLite")
+installed_packages <- packages %in% rownames(installed.packages())
+
+if (any(installed_packages == FALSE)) {
+  install.packages(packages[!installed_packages])
+}
+```
+
+Load packages
+```{r}
+library(here)
+library(janitor)
+library(tidyverse)
+library(sf)
+library(kableExtra)
+```
+
+### 2. Load Data
+```{r}
+gdw_df <- read_csv("data/gdw.csv") |> # load in the csv file
+    clean_names() # standardize the names to look uniform
+```
+
+### 3. Data Exploration
+
+The first 10 rows
+```{r}
+head(gdw_df,10) |> 
+    kable()
+```
+
+The last 10 rows
+```{r}
+tail(gdw_df,10) |> 
+    kable() |> 
+    kable_styling()
+```
+
+Find the number of rows and colums
+```{r}
+# glimpse(gdw_df)
+print(paste("# of rows:", nrow(gdw_df)))
+print(paste("# of cols:", ncol(gdw_df)))
+```
+
+Print the column names
+```{r}
+names(gdw_df)
+```
+
+### 4. Index, Summarize, Subset Data
+Extract country name
+```{r}
+countries_df <- gdw_df[,"country"]
+countries_df
+country_vec <- gdw_df[["country"]]
+```
+
+Find number of dams by dam type
+```{r}
+gdw_df |> 
+  group_by(dam_type) |>
+  summarise(count = n()) |>
+  ungroup()
+```
+
+subset for damns only
+```{r}
+sub_dam <- gdw_df |>
+  filter(dam_type == "Dam")
+sub_dam
+```
+
+Re-order gdw_df by ascending order of installation year
+```{r}
+gdw_df <- gdw_df |> 
+    arrange(year_dam)
+```
+
+### 5. Data Visualization
+Make a bar graph of average height of dam/barrier in meters (dam_hgt_m) by country
+```{r}
+ggplot(
+    data = gdw_df,
+    mapping = aes(
+        y = mean(dam_hgt_m),
+        x = country
+    )
+) +
+    geom_bar()
+```
