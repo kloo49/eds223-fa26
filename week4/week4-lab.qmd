@@ -1,0 +1,133 @@
+---
+title: 'Week 4: Discussion Section (terra and stars)'
+---
+
+```{r}
+library(tidyverse)
+library(spDataLarge)
+library(sf)
+library(stars)
+library(terra)
+library(tmap)
+```
+# Part 1: `terra`
+
+## 1. Load the data
+```{r}
+dem <- terra::rast(system.file("raster/dem.tif", package = "spDataLarge"))
+landsat <- terra::rast(system.file("raster/landsat.tif", package = "spDataLarge"))
+srtm <- terra::rast(system.file("raster/srtm.tif", package = "spDataLarge"))
+```
+
+## 2. Explore elevation at Mt. Mongón, Perú
+
+### 2.1 Make a boxplot and histogram of elevation at Mt. Mongón, Perú
+
+```{r}
+terra::boxplot(dem, main = 'Mt Mongon Elevation Model Distribution', ylab = 'Value', xlab = 'Elevation')
+terra::hist(dem, main = 'Mt Mongon Elevation Model Distribution', xlab = 'Value', ylab = 'Frequency')
+```
+
+### 2.2 Reclassify dem and compute the mean for the three classes:
+
+```{r}
+reclass <- matrix(c(-Inf, 300, 0,
+                    300, 500, 1,
+                    500, Inf, 2),
+                    byrow = TRUE, ncol = 3)
+
+dem_reclass <- classify(dem, rcl = reclass)
+
+levels(dem_reclass) <- data.frame(id = 0:2,
+                              cats = c("low", "medium", "high"))
+
+elevation_mean <- terra::zonal(
+    dem, dem_reclass, fun = 'mean'
+)
+elevation_mean
+```
+
+```{r}
+tm_shape(dem_reclass) +
+    tm_raster(col.legend = tm_legend('Elevation class')) +
+    tm_title(text = 'Elevation distribution of Mt. Mongon')
+```
+
+## 3. Explore NDVI and NDWI at Zion National Park
+
+```{r}
+# Defining functions
+ndwi <- function(green, nir){
+    (green - nir) / (green + nir)
+}
+
+ndvi <- function(nir, red){
+    (nir - red) / (nir + red)
+}
+```
+
+### 3.1 Calculate the Normalized Difference Vegetation Index (NDVI) at Zion National Park
+
+```{r}
+ndwi_rast <- lapp(landsat[[c(2,4)]], fun = ndvi)
+```
+
+### 3.2 Calculate the Normalized Difference Water Index (NDWI) at Zion National Park
+
+```{r}
+ndvi_rast <- lapp(landsat[[c(4,3)]], fun = ndvi)
+```
+
+### 3.3 Find a correlation between NDVI and NDWI at Zion National Park
+
+```{r}
+combine <- c(ndwi_rast, ndvi_rast)
+plot(combine, main = c('NDwI','NDVI'))
+```
+
+## 4. Change resolution of elevation at Zion National Park
+
+```{r}
+rast_template <- rast(ext(srtm),res = 0.01)
+srtm_clip <- srtm[rast_template]
+```
+
+# Part 2: `sf` + `stars`
+
+## 1. Load the data
+
+```{r}
+dem <- stars::read_stars(system.file("raster/dem.tif", package = "spDataLarge"))
+landsat <- stars::read_stars(system.file("raster/landsat.tif", package = "spDataLarge"))
+srtm <- stars::read_stars(system.file("raster/srtm.tif", package = "spDataLarge"))
+```
+
+```{r}
+class(srtm)   # should be "stars" in Part 2
+```
+
+```{r}
+hist(dem,
+    main = 'Elevation Mt Mongon',
+    xlab = 'Elevation')
+```
+
+```{r}
+boxplot(dem,
+    main = 'Elevation Mt Mongon',
+    xlab = 'Elevation')
+```
+
+```{r}
+dem_rcl <- cut(dem,
+        breaks = c(-Inf, 300, 500, Inf),
+        labels = c('low','medium','high'))
+
+plot(dem_rcl, main = 'Elevation distribution of Mt. Mongon')
+```
+
+## 2. Explore NDVI and NDWI at Zion National Park
+
+```{r}
+
+```
